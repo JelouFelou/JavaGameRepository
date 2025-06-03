@@ -8,13 +8,14 @@ public class GameState {
     private int currentDay = 1;
     private final List<Character> characters = new ArrayList<>();
     private int foodSupplies = 3;
+    private int backupFoodState;
 
-    public void startGame() {
+    public void startGame(Scanner scanner) {
         initializeCharacters();
 
-        while(currentDay <= 5 && !isGameOver()) { // 5 day test
+        while(currentDay <= 5 && !isGameOver()) {
             System.out.println("\n=== DZIEŃ " + currentDay + " ===");
-            simulateDay();
+            simulateDay(scanner);
             currentDay++;
         }
 
@@ -26,18 +27,10 @@ public class GameState {
         characters.add(new Character("Monika"));
     }
 
-    private void simulateDay() {
-        // 1. Check Hunger (every 2 days)
-        if(currentDay % 2 == 0) {
-            System.out.println("--> Sprawdzam głód...");
-            characters.forEach(c -> c.setHungry(true));
-        }
-
-        // 2. Check status
-        displayStatus();
-
-        // 3. Simulate event
-        simulateRandomEvent();
+    private boolean confirmDayEnd(Scanner scanner) {
+        System.out.print("\nCzy przejść do następnego dnia? (T/N) ");
+        String choice = scanner.nextLine().trim().toUpperCase();
+        return choice.equals("T");
     }
 
     private void simulateRandomEvent() {
@@ -66,36 +59,57 @@ public class GameState {
         });
     }
 
-    public void startGame(Scanner scanner) {
-        initializeCharacters();
+    private void simulateDay(Scanner scanner) {
+        // 0. Reset stanu dnia (na wypadek powrotu do karmienia)
+        List<Character> dayStartState = backupCharacters();
 
-        while(currentDay <= 5 && !isGameOver()) {
-            System.out.println("\n=== DZIEŃ " + currentDay + " ===");
-            simulateDay(scanner);
-            currentDay++;
+        boolean dayCompleted = false;
+        while(!dayCompleted) {
+            // 1. Wydarzenie dnia (teraz PRZED karmieniem)
+            simulateRandomEvent();
+
+            // 2. Sprawdź głód (co 2 dni)
+            if(currentDay % 2 == 0) {
+                System.out.println("--> Sprawdzam głód...");
+                characters.forEach(c -> c.setHungry(true));
+            }
+
+            // 3. Wyświetl stan
+            displayStatus();
+
+            // 4. Karmienie
+            handleFeeding(scanner);
+
+            // 5. Potwierdzenie zakończenia dnia
+            dayCompleted = confirmDayEnd(scanner);
+
+            // 6. Jeśli nie potwierdzono, przywróć stan
+            if(!dayCompleted) {
+                restoreCharacters(dayStartState);
+                System.out.println("\n--- Powrót do karmienia ---");
+            }
         }
 
-        System.out.println("\nKONIEC GRY!");
+        // 7. Efekty końca dnia
+        characters.forEach(Character::applyDailyEffects);
     }
 
-    private void simulateDay(Scanner scanner) {
-        // 1. Sprawdź głód (co 2 dni)
-        if(currentDay % 2 == 0) {
-            System.out.println("--> Sprawdzam głód...");
-            characters.forEach(c -> c.setHungry(true));
+    private List<Character> backupCharacters() {
+        backupFoodState = foodSupplies; // Teraz poprawnie - int do int
+        List<Character> backup = new ArrayList<>();
+        for(Character original : characters) {
+            Character copy = new Character(original.getName());
+            copy.setHungry(original.isHungry());
+            backup.add(copy);
         }
+        return backup;
+    }
 
-        // 2. Wyświetl stan
-        displayStatus();
-
-        // 3. Karmienie postaci - POPRAWIONE: przekazujemy Scanner
-        handleFeeding(scanner);
-
-        // 4. Symuluj wydarzenie
-        simulateRandomEvent();
-
-        // 5. Zastosuj efekty dnia
-        characters.forEach(Character::applyDailyEffects);
+    private void restoreCharacters(List<Character> backup) {
+        foodSupplies = backupFoodState;
+        for(int i = 0; i < characters.size(); i++) {
+            characters.get(i).setHungry(backup.get(i).isHungry());
+        }
     }
 
     public void feedCharacter(int characterIndex) {
