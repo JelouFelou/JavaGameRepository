@@ -1,4 +1,4 @@
-package main.java.com.game;
+package main.java.com.game.model;
 
 public class Character {
     private String name;

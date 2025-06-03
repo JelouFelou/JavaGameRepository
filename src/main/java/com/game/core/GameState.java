@@ -1,4 +1,6 @@
-package main.java.com.game;
+package main.java.com.game.core;
+
+import main.java.com.game.model.Character;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,5 +1,7 @@
 package main.java.com.game;
 
+import main.java.com.game.core.GameState;
+
 import java.util.Scanner;
 
 public class Main {
