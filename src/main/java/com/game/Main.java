@@ -1,7 +1,6 @@
 package main.java.com.game;
 
-import main.java.com.game.core.GameState;
-
+import main.java.com.game.core.GameController;
 import java.util.Scanner;
 
 public class Main {
@@ -10,7 +9,7 @@ public class Main {
         System.out.flush();
         System.out.println("=== SURVIVAL GAME ===");
         Scanner scanner = new Scanner(System.in);
-        GameState game = new GameState();
+        GameController game = new GameController();
         game.startGame(scanner);
         scanner.close();
     }
