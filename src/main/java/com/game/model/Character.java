@@ -19,6 +19,10 @@ public class Character {
         isHungry = false;
     }
 
+    public void setHealth(int health) {
+        this.health = Math.max(0, Math.min(100, health));
+    }
+
     public void applyDailyEffects() {
         if(isHungry) {
             health -= 20;

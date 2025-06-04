@@ -1,0 +1,13 @@
+#ID: hungry_day
+#UNIQUE
+Dziś wszyscy są wyjątkowo głodni!
+OPTIONS:
+Nakarm wszystkich | -food:2 | +health:10
+Oszczędzaj jedzenie | -health:15
+
+---
+#ID: found_water
+Znaleziono butelkę wody!
+OPTIONS:
+Wypić | +health:5
+Zachować na później | +water:1

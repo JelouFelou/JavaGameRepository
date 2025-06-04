@@ -1,0 +1,13 @@
+#ID: door_event
+#UNIQUE
+Ktoś puka do drzwi. Otworzyć?
+OPTIONS:
+Tak | +food:2
+Nie | -health:10
+
+---
+#ID: found_food
+Znaleziono paczkę z jedzeniem!
+OPTIONS:
+Zabrać | +food:3
+Zignorować | +health:5
