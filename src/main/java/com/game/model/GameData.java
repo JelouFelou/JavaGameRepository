@@ -6,12 +6,21 @@ import java.util.List;
 public class GameData {
     private int currentDay = 1;
     private final List<Character> characters = new ArrayList<>();
-    private int foodSupplies = 3;
+    private int foodSupplies = 2;
+    private int waterSupplies = 2;
+    private int medicineSupplies = 1;
 
     // Gettery i settery
     public int getCurrentDay() { return currentDay; }
     public void setCurrentDay(int day) { this.currentDay = day; }
     public List<Character> getCharacters() { return characters; }
+
     public int getFoodSupplies() { return foodSupplies; }
-    public void setFoodSupplies(int amount) { this.foodSupplies = amount; }
+    public void setFoodSupplies(int foodSupplies) { this.foodSupplies = foodSupplies; }
+
+    public int getWaterSupplies() { return waterSupplies; }
+    public void setWaterSupplies(int waterSupplies) { this.waterSupplies = waterSupplies; }
+
+    public int getMedicineSupplies() { return medicineSupplies; }
+    public void setMedicineSupplies(int medicineSupplies) { this.medicineSupplies = medicineSupplies; }
 }

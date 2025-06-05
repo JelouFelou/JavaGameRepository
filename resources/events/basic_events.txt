@@ -2,12 +2,26 @@
 #UNIQUE
 Dziś wszyscy są wyjątkowo głodni!
 OPTIONS:
-Nakarm wszystkich | -food:2 | +health:10
-Oszczędzaj jedzenie | -health:15
+Nakarm wszystkich | -food:3 | +health:10
+Oszczędzaj jedzenie | -health:25
 
 ---
 #ID: found_water
-Znaleziono butelkę wody!
+Znaleziono źródło czystej wody!
 OPTIONS:
-Wypić | +health:5
-Zachować na później | +water:1
+Napełnić zapasy | +water:2
+Zignorować | -health:10
+
+---
+#ID: sick_event
+Jeden z członków zespołu ma objawy choroby zakaźnej!
+OPTIONS:
+Odizolować chorego | sick:1
+Zignorować problem | -health:20
+
+---
+#ID: found_medicine
+Znaleziono apteczkę pierwszej pomocy!
+OPTIONS:
+Zabrać | +medicine:2
+Zostawić | +health:10
