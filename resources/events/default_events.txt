@@ -1,5 +1,4 @@
 #ID: door_event
-#UNIQUE
 Ktoś puka do drzwi. Otworzyć?
 OPTIONS:
 Tak | +food:2

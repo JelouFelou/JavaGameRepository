@@ -1,0 +1,25 @@
+#ID: secret_room_etap1
+#UNIQUE
+#FREQ: 0.3
+Pod podłogą schronu znajdujesz zamaskowane drzwi. Wygląda na to, że poprzedni mieszkańcy coś ukryli...
+OPTIONS:
+Sprawdzić, co jest w środku 
+Zignorować | -health:10 | remove_chain:secret_room_etap1
+
+---
+#ID: secret_room_etap2
+#UNIQUE
+#HIDDEN
+Następnego dnia w środku zamaskowanych drzwi znajdujesz starą skrzynię. Jest zamknięta na kłódkę.
+OPTIONS:
+Spróbować otworzyć (wymaga siły) 
+Zostawić skrzynię | +health:5 | remove_chain:secret_room_etap2
+
+---
+#ID: secret_room_etap3
+#UNIQUE
+#HIDDEN
+Stara skrzynia znaleziona w środku zamaskowanych drzwi zawiera mapę do ukrytego magazynu! To może być ratunek dla twojej rodziny.
+OPTIONS:
+Zabierz mapę | +medicine:3 | +food:5 | game_effect:unlock_bunker
+Spal mapę (to może być pułapka) | -health:30

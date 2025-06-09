@@ -16,6 +16,10 @@ public class GameController {
     private final GameBackup gameBackup;
     private List<Event> events;
     private final Random random = new Random();
+    private final Set<String> unlockedEvents = new HashSet<>();
+    private final Map<String, String> nextEvents = new HashMap<>();
+    private final Map<String, String> eventChains = new HashMap<>();
+    private final Map<String, String> eventSequences = new HashMap<>();
 
     private int backupFoodState;
     private int backupWaterState;
@@ -36,11 +40,12 @@ public class GameController {
             System.err.println("Błąd ładowania eventów: " + e.getMessage());
             this.events = createDefaultEvents();
         }
+        initializeEventChains();
     }
     public void startGame(Scanner scanner) {
         initializeCharacters();
 
-        while(gameData.getCurrentDay() <= 5 && !isGameOver()) {
+        while(gameData.getCurrentDay() <= 100 && !isGameOver()) {
             System.out.println("\n=== DZIEŃ " + gameData.getCurrentDay() + " ===");
             simulateDay(scanner);
             gameData.setCurrentDay(gameData.getCurrentDay() + 1);
@@ -121,6 +126,7 @@ public class GameController {
 
     // === SYMULACJA DNIA ===
     private void simulateDay(Scanner scanner) {
+        clearScreen();
         // 0. Backup stanu początkowego dnia
         List<Character> dayStartState = backupCharacters();
         int startFood = gameData.getFoodSupplies();
@@ -146,6 +152,10 @@ public class GameController {
             if (currentEvent != null) {
                 System.out.println("\n[WYDARZENIE]");
                 System.out.println(currentEvent.getDescription());
+
+                if (currentEvent.isUnique()) {
+                    unlockedEvents.add(currentEvent.getId());
+                }
 
                 List<EventOption> options = currentEvent.getOptions();
                 for (int i = 0; i < options.size(); i++) {
@@ -186,81 +196,150 @@ public class GameController {
 
     // === OBSŁUGA WYDARZEŃ ===
     public Event getRandomEvent() {
+        // 1. Sprawdź czy mamy oczekujący event w sekwencji
+        for (String unlocked : new HashSet<>(unlockedEvents)) {
+            String nextId = eventSequences.get(unlocked);
+            // Zmiana warunku: sprawdzamy czy następnik istnieje i nie jest jeszcze odblokowany
+            if (nextId != null && !unlockedEvents.contains(nextId)) {
+                Event nextEvent = findEventById(nextId);
+                if (nextEvent != null) {
+                    unlockedEvents.add(nextId); // Odblokuj następny etap
+                    return nextEvent;
+                }
+            }
+        }
+
+        // 2. Standardowe losowanie
         List<Event> availableEvents = events.stream()
+                .filter(e -> !e.isHidden() || unlockedEvents.contains(e.getId()))
+                .filter(e -> !e.isUnique() || !unlockedEvents.contains(e.getId()))
                 .filter(e -> random.nextDouble() <= e.getFrequency())
                 .collect(Collectors.toList());
 
-        if (availableEvents.isEmpty()) {
-            return null;
-        }
-
-        return availableEvents.get(random.nextInt(availableEvents.size()));
+        return availableEvents.isEmpty() ? null : availableEvents.get(random.nextInt(availableEvents.size()));
     }
     private List<Event> createDefaultEvents() {
         return List.of(
                 new Event("default", "Nic się nie wydarzyło.", List.of(
                         new EventOption("OK", Map.of())
-                ), false, 1.0)
+                ), false, 1.0, false)
         );
     }
-    private void applyEffects(Map<String, Integer> effects) {
-        for (Map.Entry<String, Integer> entry : effects.entrySet()) {
+    private void applyEffects(Map<String, String> effects) {
+        for (Map.Entry<String, String> entry : effects.entrySet()) {
             String effect = entry.getKey();
-            int value = entry.getValue();
+            String value = entry.getValue();
+            final String finalValue;
 
-            switch (effect) {
-                case "+food":
-                    gameData.setFoodSupplies(gameData.getFoodSupplies() + value);
-                    System.out.println("+ " + value + " jedzenia");
-                    break;
-                case "-food":
-                    gameData.setFoodSupplies(Math.max(0, gameData.getFoodSupplies() - value));
-                    System.out.println("- " + value + " jedzenia");
-                    break;
-                case "+health":
-                    gameData.getCharacters().forEach(c -> {
-                        int newHealth = Math.min(100, c.getHealth() + value);
-                        c.setHealth(newHealth);
-                    });
-                    System.out.println("+ " + value + " zdrowia");
-                    break;
-                case "-health":
-                    gameData.getCharacters().forEach(c -> {
-                        c.setHealth(Math.max(0, c.getHealth() - value));
-                    });
-                    System.out.println("- " + value + " zdrowia");
-                    break;
-                case "+water":
-                    gameData.setWaterSupplies(gameData.getWaterSupplies() + value);
-                    System.out.println("+ " + value + " wody");
-                    break;
-                case "-water":
-                    gameData.setWaterSupplies(Math.max(0, gameData.getWaterSupplies() - value));
-                    System.out.println("- " + value + " wody");
-                    break;
-                case "+medicine":
-                    gameData.setMedicineSupplies(gameData.getMedicineSupplies() + value);
-                    System.out.println("+ " + value + " leków");
-                    break;
-                case "-medicine":
-                    gameData.setMedicineSupplies(Math.max(0, gameData.getMedicineSupplies() - value));
-                    System.out.println("- " + value + " leków");
-                    break;
-
-                case "sick": // choruje jedna osoba
-                    if (!gameData.getCharacters().isEmpty()) {
-                        int index = random.nextInt(gameData.getCharacters().size());
-                        gameData.getCharacters().get(index).setSick(true);
-                        System.out.println(gameData.getCharacters().get(index).getName() + " zachorował!");
+            try {
+                // obsługa losowych wartości
+                if (value.startsWith("rand(") && value.endsWith(")")) {
+                    String range = value.substring(5, value.length() - 1);
+                    String[] parts = range.split(",");
+                    if (parts.length == 2) {
+                        int min = Integer.parseInt(parts[0].trim());
+                        int max = Integer.parseInt(parts[1].trim());
+                        value = String.valueOf(random.nextInt(max - min + 1) + min);
                     }
-                    break;
-                case "cure": // leczy wszystkich
-                    gameData.getCharacters().forEach(c -> c.setSick(false));
-                    System.out.println("Wszyscy zostali wyleczeni!");
-                    break;
+                }
+                finalValue = value;
+
+                switch (effect) {
+                    // Efekty liczbowe
+                    case "+food":
+                        gameData.setFoodSupplies(gameData.getFoodSupplies() + Integer.parseInt(value));
+                        System.out.println("+ " + value + " jedzenia");
+                        break;
+                    case "-food":
+                        gameData.setFoodSupplies(Math.max(0, gameData.getFoodSupplies() - Integer.parseInt(value)));
+                        System.out.println("- " + value + " jedzenia");
+                        break;
+                    case "+health":
+                        gameData.getCharacters().forEach(c -> {
+                            int newHealth = Math.min(100, c.getHealth() + Integer.parseInt(finalValue));
+                            c.setHealth(newHealth);
+                        });
+                        System.out.println("+ " + finalValue + " zdrowia");
+                        break;
+                    case "-health":
+                        gameData.getCharacters().forEach(c -> {
+                            c.setHealth(Math.max(0, c.getHealth() - Integer.parseInt(finalValue)));
+                        });
+                        System.out.println("- " + finalValue + " zdrowia");
+                        break;
+                    case "+water":
+                        gameData.setWaterSupplies(gameData.getWaterSupplies() + Integer.parseInt(value));
+                        System.out.println("+ " + value + " wody");
+                        break;
+                    case "-water":
+                        gameData.setWaterSupplies(Math.max(0, gameData.getWaterSupplies() - Integer.parseInt(value)));
+                        System.out.println("- " + value + " wody");
+                        break;
+                    case "+medicine":
+                        gameData.setMedicineSupplies(gameData.getMedicineSupplies() + Integer.parseInt(value));
+                        System.out.println("+ " + value + " leków");
+                        break;
+                    case "-medicine":
+                        gameData.setMedicineSupplies(Math.max(0, gameData.getMedicineSupplies() - Integer.parseInt(value)));
+                        System.out.println("- " + value + " leków");
+                        break;
+                    case "feed_all":
+                        int familySize = gameData.getCharacters().size();
+                        if (gameData.getFoodSupplies() >= familySize) {
+                            gameData.setFoodSupplies(gameData.getFoodSupplies() - familySize);
+                            gameData.getCharacters().forEach(Character::feed);
+                            System.out.printf("- Zużyto dodatkowo %d jedzenia!%n", familySize);
+                        } else {
+                            System.out.println("Nie ma wystarczająco jedzenia!");
+                        }
+                        break;
+
+                    // Efekty specjalne (tekstowe)
+                    case "unlock":
+                        unlockedEvents.add(value);
+                        System.out.println("Odblokowano wydarzenie: " + value);
+                        break;
+                    case "sick":
+                        if (!gameData.getCharacters().isEmpty()) {
+                            int index = random.nextInt(gameData.getCharacters().size());
+                            gameData.getCharacters().get(index).setSick(true);
+                            System.out.println(gameData.getCharacters().get(index).getName() + " zachorował!");
+                        }
+                        break;
+                    case "cure":
+                        gameData.getCharacters().forEach(c -> c.setSick(false));
+                        System.out.println("Wszyscy zostali wyleczeni!");
+                        break;
+                    case "game_effect":
+                        handleGameEffect(value);
+                        break;
+                    default:
+                        System.out.println("Nieznany efekt: " + effect + ":" + value);
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Błąd parsowania efektu " + effect + ": " + value);
             }
         }
+    } // applyEffects
+    private void handleGameEffect(String effect) {
+        switch (effect) {
+            case "unlock_bunker":
+                System.out.println("Odblokowano sekretny bunkier!");
+                break;
+            default:
+                System.out.println("Nieznany efekt gry: " + effect);
+        }
     }
+    private Event findEventById(String eventId) {
+        return events.stream()
+                .filter(e -> e.getId().equals(eventId))
+                .findFirst()
+                .orElse(null);
+    }
+    private void initializeEventChains() {
+        eventSequences.put("secret_room_etap1", "secret_room_etap2");
+        eventSequences.put("secret_room_etap2", "secret_room_etap3");
+    } // eventChain
 
 
     // === BACKUP I PRZYWRACANIE STANU ===
@@ -324,4 +403,17 @@ public class GameController {
         return gameData.getCharacters().stream().allMatch(c -> c.getHealth() <= 0);
     }
 
+    // === Czyszczenie ekranu ===
+    private void clearScreen() {
+        try {
+            if (System.getProperty("os.name").contains("Windows")) {
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            } else {
+                System.out.print("\033[H\033[2J");
+                System.out.flush();
+            }
+        } catch (Exception e) {
+            System.out.println("Nie udało się wyczyścić ekranu: " + e.getMessage());
+        }
+    }
 }

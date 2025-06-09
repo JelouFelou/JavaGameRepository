@@ -6,9 +6,9 @@ import java.util.List;
 public class GameData {
     private int currentDay = 1;
     private final List<Character> characters = new ArrayList<>();
-    private int foodSupplies = 2;
-    private int waterSupplies = 2;
-    private int medicineSupplies = 1;
+    private int foodSupplies = 100;
+    private int waterSupplies = 200;
+    private int medicineSupplies = 100;
 
     // Gettery i settery
     public int getCurrentDay() { return currentDay; }

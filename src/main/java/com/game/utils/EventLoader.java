@@ -46,6 +46,7 @@ public class EventLoader {
         Scanner scanner = new Scanner(block);
         String id = "";
         boolean isUnique = false;
+        boolean isHidden = false;
         double frequency = 1.0;
         StringBuilder description = new StringBuilder();
         List<EventOption> options = new ArrayList<>();
@@ -59,6 +60,9 @@ public class EventLoader {
             }
             else if (line.equals("#UNIQUE")) {
                 isUnique = true;
+            }
+            else if (line.equals("#HIDDEN")) {
+                isHidden = true;
             }
             else if (line.startsWith("#FREQ:")) {
                 frequency = Double.parseDouble(line.substring(6).trim());
@@ -78,11 +82,14 @@ public class EventLoader {
 
             String[] parts = line.split("\\|");
             String text = parts[0].trim();
-            Map<String, Integer> effects = new HashMap<>();
+            Map<String, String> effects = new HashMap<>();
 
             for (int i = 1; i < parts.length; i++) {
                 String[] effect = parts[i].trim().split(":");
-                effects.put(effect[0], Integer.parseInt(effect[1]));
+                String key = effect[0].trim();
+                String value = effect.length > 1 ?
+                        Arrays.stream(effect).skip(1).collect(Collectors.joining(":")) : "";
+                effects.put(key, value);
             }
 
             options.add(new EventOption(text, effects));
@@ -93,7 +100,8 @@ public class EventLoader {
                 description.toString().trim(),
                 options,
                 isUnique,
-                frequency
+                frequency,
+                isHidden
         );
     }
 }
