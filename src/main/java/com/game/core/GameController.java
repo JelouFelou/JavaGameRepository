@@ -17,14 +17,16 @@ public class GameController {
     private List<Event> events;
     private final Random random = new Random();
     private final Set<String> unlockedEvents = new HashSet<>();
-    private final Map<String, String> nextEvents = new HashMap<>();
-    private final Map<String, String> eventChains = new HashMap<>();
     private final Map<String, String> eventSequences = new HashMap<>();
 
     private int backupFoodState;
     private int backupWaterState;
     private int backupMedicineState;
-
+    private int backupDayState;
+    private Event currentDayEvent;
+    private Event backupCurrentEvent;
+    private Set<String> backupUnlockedEvents;
+    private Map<String, String> backupEventSequences;
 
     // === INICJALIZACJA GRY ===
     public GameController() {
@@ -128,6 +130,7 @@ public class GameController {
     private void simulateDay(Scanner scanner) {
         clearScreen();
         // 0. Backup stanu początkowego dnia
+        currentDayEvent = getRandomEvent();
         List<Character> dayStartState = backupCharacters();
         int startFood = gameData.getFoodSupplies();
 
@@ -149,15 +152,15 @@ public class GameController {
 
             // 3. Wylosuj i przeprowadź wydarzenie
             Event currentEvent = getRandomEvent();
-            if (currentEvent != null) {
+            if (currentDayEvent != null) {
                 System.out.println("\n[WYDARZENIE]");
-                System.out.println(currentEvent.getDescription());
+                System.out.println(currentDayEvent.getDescription());
 
-                if (currentEvent.isUnique()) {
-                    unlockedEvents.add(currentEvent.getId());
+                if (currentDayEvent.isUnique()) {
+                    unlockedEvents.add(currentDayEvent.getId());
                 }
 
-                List<EventOption> options = currentEvent.getOptions();
+                List<EventOption> options = currentDayEvent.getOptions();
                 for (int i = 0; i < options.size(); i++) {
                     System.out.printf("%d. %s%n", i + 1, options.get(i).getText());
                 }
@@ -283,14 +286,43 @@ public class GameController {
                         gameData.setMedicineSupplies(Math.max(0, gameData.getMedicineSupplies() - Integer.parseInt(value)));
                         System.out.println("- " + value + " leków");
                         break;
+
+                    // Efekty całorodzinne
                     case "feed_all":
                         int familySize = gameData.getCharacters().size();
                         if (gameData.getFoodSupplies() >= familySize) {
                             gameData.setFoodSupplies(gameData.getFoodSupplies() - familySize);
                             gameData.getCharacters().forEach(Character::feed);
                             System.out.printf("- Zużyto dodatkowo %d jedzenia!%n", familySize);
+                            System.out.println("Wszyscy zostali nakarmieni!");
                         } else {
                             System.out.println("Nie ma wystarczająco jedzenia!");
+                        }
+                        break;
+                    case "quench_all":
+                        int familySizeWater = gameData.getCharacters().size();
+                        if (gameData.getWaterSupplies() >= familySizeWater) {
+                            gameData.setWaterSupplies(gameData.getWaterSupplies() - familySizeWater);
+                            gameData.getCharacters().forEach(c -> c.setThirsty(false));
+                            System.out.printf("- Zużyto dodatkowo %d wody!%n", familySizeWater);
+                            System.out.println("Wszyscy zostali napojeni!");
+                        } else {
+                            System.out.println("Nie ma wystarczająco wody!");
+                        }
+                        break;
+                    case "sick_all":
+                        gameData.getCharacters().forEach(c -> c.setSick(true));
+                        System.out.println("Wszyscy zachorowali!");
+                        break;
+                    case "cure_all":
+                        int familySizeMed = gameData.getCharacters().size();
+                        if (gameData.getMedicineSupplies() >= familySizeMed) {
+                            gameData.setMedicineSupplies(gameData.getMedicineSupplies() - familySizeMed);
+                            gameData.getCharacters().forEach(c -> c.setSick(false));
+                            System.out.printf("- Zużyto dodatkowo %d leków!%n", familySizeMed);
+                            System.out.println("Wszyscy zostali wyleczeni");
+                        } else {
+                            System.out.println("Nie ma wystarczająco leków!");
                         }
                         break;
 
@@ -347,6 +379,11 @@ public class GameController {
         backupFoodState = gameData.getFoodSupplies();
         backupWaterState = gameData.getWaterSupplies();
         backupMedicineState = gameData.getMedicineSupplies();
+        backupDayState = gameData.getCurrentDay();
+
+        backupCurrentEvent = currentDayEvent;
+        backupUnlockedEvents = new HashSet<>(unlockedEvents);
+        backupEventSequences = new HashMap<>(eventSequences);
 
         List<Character> backup = new ArrayList<>();
         for(Character original : gameData.getCharacters()) {
@@ -354,6 +391,7 @@ public class GameController {
             copy.setHungry(original.isHungry());
             copy.setThirsty(original.isThirsty());
             copy.setSick(original.isSick());
+            copy.setHealth(original.getHealth());
             backup.add(copy);
         }
         return backup;
@@ -362,6 +400,13 @@ public class GameController {
         gameData.setFoodSupplies(backupFoodState);
         gameData.setWaterSupplies(backupWaterState);
         gameData.setMedicineSupplies(backupMedicineState);
+        gameData.setCurrentDay(backupDayState);
+
+        currentDayEvent = backupCurrentEvent;
+        unlockedEvents.clear();
+        unlockedEvents.addAll(backupUnlockedEvents);
+        eventSequences.clear();
+        eventSequences.putAll(backupEventSequences);
 
         for(int i = 0; i < gameData.getCharacters().size(); i++) {
             Character character = gameData.getCharacters().get(i);
@@ -370,6 +415,7 @@ public class GameController {
             character.setHungry(backupChar.isHungry());
             character.setThirsty(backupChar.isThirsty());
             character.setSick(backupChar.isSick());
+            character.setHealth(backupChar.getHealth());
         }
     }
 

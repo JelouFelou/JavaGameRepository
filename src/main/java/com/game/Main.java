@@ -46,12 +46,10 @@ public class Main {
         System.out.println("Każdy dzień to nowe wyzwania. Przetrwaj jak najdłużej!");
         waitForEnter(scanner);
     }
-
     private static void waitForEnter(Scanner scanner) {
         System.out.print("\nNaciśnij Enter, aby kontynuować...");
         scanner.nextLine();
     }
-
     private static void clearScreen() {
         try {
             if (System.getProperty("os.name").contains("Windows")) {
