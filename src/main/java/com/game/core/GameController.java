@@ -6,6 +6,8 @@ import main.java.com.game.model.EventOption;
 import main.java.com.game.model.GameData;
 import main.java.com.game.utils.EventLoader;
 import main.java.com.game.utils.GameBackup;
+import main.java.com.game.utils.StatusLoader;
+import main.java.com.game.utils.TextUtils;
 
 import java.io.IOException;
 import java.util.*;
@@ -435,6 +437,13 @@ public class GameController {
                     " | " + (c.isSick() ? "CHORY" : "Zdrowy");
             System.out.println(status);
         });
+
+        System.out.println("\n[NASTROJE POSTACI]");
+        for (Character character : gameData.getCharacters()) {
+            String message = StatusLoader.getRandomMessage(character);
+            String wrappedMessage = TextUtils.wrapText(character.getName() + ": " + message, 80);
+            System.out.println(wrappedMessage);
+        }
     }
 
     // === INTERAKCJA Z UŻYTKOWNIKIEM ===
