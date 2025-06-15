@@ -18,17 +18,11 @@ public class GameController {
     private final GameBackup gameBackup;
     private List<Event> events;
     private final Random random = new Random();
-    private final Set<String> unlockedEvents = new HashSet<>();
-    private final Map<String, String> eventSequences = new HashMap<>();
-
-    private int backupFoodState;
-    private int backupWaterState;
-    private int backupMedicineState;
-    private int backupDayState;
     private Event currentDayEvent;
-    private Event backupCurrentEvent;
-    private Set<String> backupUnlockedEvents;
-    private Map<String, String> backupEventSequences;
+    private Set<String> unlockedEvents = new HashSet<>();
+    private Map<String, String> eventSequences = new HashMap<>();
+    private Map<String, String> dailyStatusMessages = new HashMap<>();
+    private int lastEventChoice = -1;
 
     // === INICJALIZACJA GRY ===
     public GameController() {
@@ -49,7 +43,7 @@ public class GameController {
     public void startGame(Scanner scanner) {
         initializeCharacters();
 
-        while(gameData.getCurrentDay() <= 100 && !isGameOver()) {
+        while(gameData.getCurrentDay() <= 50 && !isGameOver()) {
             System.out.println("\n=== DZIEŃ " + gameData.getCurrentDay() + " ===");
             simulateDay(scanner);
             gameData.setCurrentDay(gameData.getCurrentDay() + 1);
@@ -65,6 +59,11 @@ public class GameController {
         gameData.getCharacters().add(new Character("Monika"));
     }
     private void handleNeeds(Scanner scanner) {
+        boolean needsExist = gameData.getCharacters().stream()
+                .anyMatch(c -> c.isHungry() || c.isThirsty() || c.isSick());
+
+        if (!needsExist) return;
+
         System.out.println("\n[ZASPOKAJANIE POTRZEB]");
         for(int i = 0; i < gameData.getCharacters().size(); i++) {
             Character character = gameData.getCharacters().get(i);
@@ -131,71 +130,104 @@ public class GameController {
     // === SYMULACJA DNIA ===
     private void simulateDay(Scanner scanner) {
         clearScreen();
-        // 0. Backup stanu początkowego dnia
+
+        // 1. Ustaw potrzeby na początku dnia
+        if (gameData.getCurrentDay() % 2 == 0) {
+            System.out.println("--> Sprawdzam głód...");
+            gameData.getCharacters().forEach(c -> c.setHungry(true));
+        }
+        if (gameData.getCurrentDay() % 3 == 0) {
+            System.out.println("--> Sprawdzam pragnienie...");
+            gameData.getCharacters().forEach(c -> c.setThirsty(true));
+        }
+
+        // Generuj wiadomości statusowe
+        generateDailyStatusMessages();
+
+        // 2. Losuj wydarzenie dnia PRZED backupem
         currentDayEvent = getRandomEvent();
-        List<Character> dayStartState = backupCharacters();
-        int startFood = gameData.getFoodSupplies();
+        if (currentDayEvent == null) {
+            currentDayEvent = findEventById("default");
+        }
+
+        // Backup stanu PO ustawieniu potrzeb i PO wylosowaniu wydarzenia
+        gameBackup.backupState(
+                gameData,
+                currentDayEvent,
+                unlockedEvents,
+                eventSequences,
+                dailyStatusMessages,
+                lastEventChoice
+        );
 
         boolean dayCompleted = false;
         while(!dayCompleted) {
-            // 1. Sprawdź głód (co 2 dni)
-            if (gameData.getCurrentDay() % 2 == 0) {
-                System.out.println("--> Sprawdzam głód...");
-                gameData.getCharacters().forEach(c -> c.setHungry(true));
-            }
-            if (gameData.getCurrentDay() % 3 == 0) {
-                System.out.println("--> Sprawdzam pragnienie...");
-                gameData.getCharacters().forEach(c -> c.setThirsty(true));
-            }
-
-
-            // 2. Wyświetl status
+            // 3. Wyświetl status
             displayStatus();
 
-            // 3. Wylosuj i przeprowadź wydarzenie
-            Event currentEvent = getRandomEvent();
+            // 4. Przeprowadź wydarzenie
             if (currentDayEvent != null) {
                 System.out.println("\n[WYDARZENIE]");
                 System.out.println(currentDayEvent.getDescription());
 
-                if (currentDayEvent.isUnique()) {
-                    unlockedEvents.add(currentDayEvent.getId());
-                }
-
                 List<EventOption> options = currentDayEvent.getOptions();
-                for (int i = 0; i < options.size(); i++) {
-                    System.out.printf("%d. %s%n", i + 1, options.get(i).getText());
-                }
 
-                int choice = -1;
-                while (choice < 0 || choice >= options.size()) {
-                    System.out.print("Twój wybór (1-" + options.size() + "): ");
-                    try {
-                        choice = scanner.nextInt() - 1;
-                        scanner.nextLine();
-                    } catch (InputMismatchException e) {
-                        scanner.nextLine();
-                        System.out.println("Nieprawidłowy wybór!");
+                // Automatyczny wybór jeśli istnieje zapamiętany
+                if (lastEventChoice != -1) {
+                    System.out.println("Automatyczny wybór: " + (lastEventChoice + 1));
+                    applyEffects(options.get(lastEventChoice).getEffects());
+
+                    if (currentDayEvent.isUnique()) {
+                        unlockedEvents.add(currentDayEvent.getId());
                     }
                 }
-                applyEffects(options.get(choice).getEffects());
+                // Ręczny wybór
+                else {
+                    for (int i = 0; i < options.size(); i++) {
+                        System.out.printf("%d. %s%n", i + 1, options.get(i).getText());
+                    }
+
+                    int choice = -1;
+                    while (choice < 0 || choice >= options.size()) {
+                        System.out.print("Twój wybór (1-" + options.size() + "): ");
+                        try {
+                            choice = scanner.nextInt() - 1;
+                            scanner.nextLine();
+                            lastEventChoice = choice; // Zapamiętaj wybór
+                        } catch (InputMismatchException e) {
+                            scanner.nextLine();
+                            System.out.println("Nieprawidłowy wybór!");
+                        }
+                    }
+
+                    applyEffects(options.get(choice).getEffects());
+
+                    if (currentDayEvent.isUnique()) {
+                        unlockedEvents.add(currentDayEvent.getId());
+                    }
+                }
             }
 
-            // 4. Zaspokajanie potrzeb
+            // 5. Zaspokajanie potrzeb
             handleNeeds(scanner);
 
-            // 5. Potwierdzenie zakończenia dnia
+            // 6. Potwierdzenie zakończenia dnia
             dayCompleted = confirmDayEnd(scanner);
 
-            // 6. Jeśli nie potwierdzono, przywróć stan początkowy
+            // 7. Przywrócenie stanu jeśli nie potwierdzono
             if(!dayCompleted) {
-                restoreCharacters(dayStartState);
-                gameData.setFoodSupplies(startFood);
+                gameBackup.restoreState(gameData);
+                currentDayEvent = gameBackup.getBackupCurrentDayEvent();
+                unlockedEvents = new HashSet<>(gameBackup.getBackupUnlockedEvents());
+                eventSequences = new HashMap<>(gameBackup.getBackupEventSequences());
+                lastEventChoice = gameBackup.getBackupLastEventChoice();
                 System.out.println("\n--- Powrót do początku dnia ---");
+            } else {
+                lastEventChoice = -1;
             }
         }
 
-        // 7. Koniec dnia
+        // 8. Zastosuj efekty końca dnia
         applyDailyEffects();
     }
 
@@ -357,9 +389,59 @@ public class GameController {
     } // applyEffects
     private void handleGameEffect(String effect) {
         switch (effect) {
-            case "unlock_bunker":
-                System.out.println("Odblokowano sekretny bunkier!");
+
+            // Secret Room Event
+            case "secret_room_etap1no":
+                System.out.println("Nie widzieliście sensu żeby otwierać te drzwi, może i dobrze");
                 break;
+            case "secret_room_etap2no":
+                System.out.println("Po co się męczyć by otworzyć jakąś starą skrzynię? Mamy lepsze rzeczy do robienia!");
+                break;
+            case "secret_room_etap3no":
+                System.out.println("Lepiej nie wychodzić ze schronu tylko po to by zobaczyć czy jakaś stara mapa " +
+                        "jest nawet jeszcze nadal poprawna, czy tam gdzie ona prowadzi są jeszcze zasoby.");
+                break;
+            case "secret_room_etap1yes":
+                System.out.println("W sumie czemu by nie sprawdzić? A nóż coś wartościowego może tutaj znajdziemy!");
+                break;
+            case "secret_room_etap2yes":
+                System.out.println("Trochę się pomęczyliście ale udało się otworzyć sejf... okazało się, że ta stara " +
+                        "skrzynia zawiera mapę do ukrytego magazynu! Przyjżycie się temu jednak kiedy indziej, na " +
+                        "dziś tyle.");
+                break;
+            case "secret_room_etap3yes":
+                System.out.println("Mimo trochę niebezpiecznej drogi udało wam się ostatecznie natrafić na " +
+                        "zaznaczone krzyżykiem miejsce na mapie i hura! 3 leki i 5 jedzenia! To dopiero skarb!");
+                break;
+
+            // Default Events
+            case "door_event_gain":
+                System.out.println("Uff! W drzwiach stał sprzedawca oferujący wam pożywienie za niewiele złota.");
+                break;
+            case "door_event_loss":
+                System.out.println("Jednak lepiej było nie otwierać... to byli bandyci. Podczas obrony zaginęło parę " +
+                        "rzeczy... trzeba być ostrożniejszym następnym razem...");
+                break;
+
+            // Lucky Events
+            case "loyal_dog":
+                System.out.println("Ta biedna psinka jest wniebowzięta i jak wszyscy zauważyli... jest nowym " +
+                        "członkiem rodziny!" +
+                        ".");
+                break;
+
+            // Tricky Events
+            case "generator_parts":
+                System.out.println("Byłeś niezdarny i się skaleczyłeś... ała...");
+                break;
+
+            // Group Events
+            case "scientist_group":
+                System.out.println("Po pomocy naukowcom, udaje się im osiągnąć to co chcieli osiągnąć.");
+                System.out.println("Do tej pory nie wiecie co próbowali zrobić ale darmowe jedzenie nie przeszkadza.");
+                break;
+            case "church_group":
+                System.out.println("Pomogliście grupie ocalałych, są oni bardzo wdzięczni!");
             default:
                 System.out.println("Nieznany efekt gry: " + effect);
         }
@@ -373,53 +455,8 @@ public class GameController {
     private void initializeEventChains() {
         eventSequences.put("secret_room_etap1", "secret_room_etap2");
         eventSequences.put("secret_room_etap2", "secret_room_etap3");
+        eventSequences.put("radio_transmission", "radio_source");
     } // eventChain
-
-
-    // === BACKUP I PRZYWRACANIE STANU ===
-    private List<Character> backupCharacters() {
-        backupFoodState = gameData.getFoodSupplies();
-        backupWaterState = gameData.getWaterSupplies();
-        backupMedicineState = gameData.getMedicineSupplies();
-        backupDayState = gameData.getCurrentDay();
-
-        backupCurrentEvent = currentDayEvent;
-        backupUnlockedEvents = new HashSet<>(unlockedEvents);
-        backupEventSequences = new HashMap<>(eventSequences);
-
-        List<Character> backup = new ArrayList<>();
-        for(Character original : gameData.getCharacters()) {
-            Character copy = new Character(original.getName());
-            copy.setHungry(original.isHungry());
-            copy.setThirsty(original.isThirsty());
-            copy.setSick(original.isSick());
-            copy.setHealth(original.getHealth());
-            backup.add(copy);
-        }
-        return backup;
-    }
-    private void restoreCharacters(List<Character> backup) {
-        gameData.setFoodSupplies(backupFoodState);
-        gameData.setWaterSupplies(backupWaterState);
-        gameData.setMedicineSupplies(backupMedicineState);
-        gameData.setCurrentDay(backupDayState);
-
-        currentDayEvent = backupCurrentEvent;
-        unlockedEvents.clear();
-        unlockedEvents.addAll(backupUnlockedEvents);
-        eventSequences.clear();
-        eventSequences.putAll(backupEventSequences);
-
-        for(int i = 0; i < gameData.getCharacters().size(); i++) {
-            Character character = gameData.getCharacters().get(i);
-            Character backupChar = backup.get(i);
-
-            character.setHungry(backupChar.isHungry());
-            character.setThirsty(backupChar.isThirsty());
-            character.setSick(backupChar.isSick());
-            character.setHealth(backupChar.getHealth());
-        }
-    }
 
 
     // === WYŚWIETLANIE STATUSU ===
@@ -440,9 +477,16 @@ public class GameController {
 
         System.out.println("\n[NASTROJE POSTACI]");
         for (Character character : gameData.getCharacters()) {
-            String message = StatusLoader.getRandomMessage(character);
+            String message = dailyStatusMessages.get(character.getName());
             String wrappedMessage = TextUtils.wrapText(character.getName() + ": " + message, 80);
             System.out.println(wrappedMessage);
+        }
+    }
+    private void generateDailyStatusMessages() {
+        dailyStatusMessages.clear();
+        for (Character character : gameData.getCharacters()) {
+            String message = StatusLoader.getRandomMessage(character);
+            dailyStatusMessages.put(character.getName(), message);
         }
     }
 

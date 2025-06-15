@@ -30,9 +30,16 @@ public class Character {
             System.out.println(name + " traci 10 zdrowia z powodu choroby!");
         }
     }
+    public void copyStateFrom(Character source) {
+        this.health = source.health;
+        this.isHungry = source.isHungry;
+        this.isThirsty = source.isThirsty;
+        this.isSick = source.isSick;
+    }
     public void setHealth(int health) {
         this.health = Math.max(0, Math.min(100, health));
     }
+
 
     // Getter
     public String getName() { return name; }

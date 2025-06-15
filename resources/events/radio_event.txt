@@ -1,0 +1,16 @@
+---
+#ID: radio_transmission
+#FREQ: 0.3
+Złapałeś słabą transmisję radiową: "...pomoc...schron...koordynaty..." Sygnał jest bardzo słaby.
+OPTIONS:
+Spróbować namierzyć źródło | +water:rand(1,3) | unlock:radio_source
+Zignorować, to może być pułapka | +health:5
+
+---
+#ID: radio_source
+#UNIQUE
+#HIDDEN
+Po długim namierzaniu znalazłeś źródło sygnału. To mała grupa ocalałych w opuszczonym kościele. Potrzebują pomocy...
+OPTIONS:
+Pomóc im | -food:3 | -water:3 | game_effect:church_group
+Zostawić ich samych sobie | -health:5

@@ -1,0 +1,45 @@
+#ID: bunker_location
+#UNIQUE
+#FREQ: 0.2
+Udało ci się namierzyć źródło transmisji. To grupa naukowców w ukrytym bunkrze niedaleko twojego schronu. Oferują
+wyżywienie w zamian za pomoc.
+OPTIONS:
+Przyjąć ofertę, w sumie czemu nie, nudno w schronie | +food:10 | +medicine:5 | game_effect:scientist_group
+Odmówić. Wolimy być sami... tak na wszelki wypadek przynajmniej | -health:10
+
+---
+#ID: winter_preparation
+#FREQ: 0.4
+Temperatura spada... zima nadchodzi szybciej niż się spodziewaliście. Musicie przygotować schron.
+OPTIONS:
+Zebrać zapas drewna na opał | +food:rand(1,3) | +health:5
+Poszukać cieplejszych ubrań | +water:rand(1,3) | +health:5
+Zignorować! Skupić się na jedzeniu! | -health:10 | +food:rand(1,4) | +water:rand(1,4)
+
+---
+#ID: community_meeting
+#FREQ: 0.1
+Spotkałeś inną grupę ocalałych. Proponują wymianę zasobów. Na co się decydujesz?
+OPTIONS:
+Wymienić 3 jedzenia na 2 leki | -food:3 | +medicine:2
+Wymienić 3 wody na 2 leki | -water:3 | +medicine:2
+Wymienić 2 leki na 4 jedzenia | -medicine:2 | +food:4
+Wymienić 2 leki na 4 wody | -medicine:2 | +water:4
+Wymienić 4 wody na 3 jedzenia | -water:4 | +food:3
+Wymienić 4 jedzenia na 3 wody | -food:4 | +water:3
+Odmówić współpracy
+
+#ID: bunker_discovery
+#FREQ: 0.2
+Podczas patrolu znalazłeś wejście do opuszczonego bunkra... Wygląda na nietknięty od lat.
+OPTIONS:
+Wejść do środka | +food:rand(5,10) | +water:rand(5,10) | +medicine:rand(2,4)
+Zabezpieczyć wejście i wrócić później | -health:5
+
+---
+#ID: infected_wound
+#FREQ: 0.4
+Podczas naprawy schronu jeden z członków rodziny poważnie się zranił. Rana wygląda na zainfekowaną.
+OPTIONS:
+Użyć antybiotyków | -medicine:1 | cure:1
+Opatrzyć domowymi sposobami | -health:15 | sick:1

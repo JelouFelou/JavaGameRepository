@@ -1,12 +1,70 @@
-#ID: door_event
+#ID: door_event_food_gain
+#FREQ: 0.3
 Ktoś puka do drzwi. Otworzyć?
 OPTIONS:
-Tak | +food:2
-Nie | -health:10
+Tak | +food:2 | game_effect:door_event_gain
+Nie
+
+---
+#ID: door_event_water_gain
+#FREQ: 0.3
+Ktoś puka do drzwi. Otworzyć?
+OPTIONS:
+Tak | +water:2 | game_effect:door_event_gain
+Nie
+
+---
+#ID: door_event_medicine_gain
+#FREQ: 0.3
+Ktoś puka do drzwi. Otworzyć?
+OPTIONS:
+Tak | +water:2 | game_effect:door_event_gain
+Nie
+
+---
+#ID: door_event_food_loss
+#FREQ: 0.3
+Ktoś puka do drzwi. Otworzyć?
+OPTIONS:
+Tak | -food:2 | game_effect:door_event_loss
+Nie | +health:5
+
+---
+#ID: door_event_water_loss
+#FREQ: 0.3
+Ktoś puka do drzwi. Otworzyć?
+OPTIONS:
+Tak | -water:2 | game_effect:door_event_loss
+Nie | +health:5
+
+---
+#ID: door_event_medicine_loss
+#FREQ: 0.3
+Ktoś puka do drzwi. Otworzyć?
+OPTIONS:
+Tak | -water:2 | game_effect:door_event_loss
+Nie | +health:5
 
 ---
 #ID: found_food
-Znaleziono paczkę z jedzeniem!
+#FREQ: 0.6
+Znaleziono paczkę z jedzeniem, yum!
 OPTIONS:
-Zabrać | +food:3
+Zabrać | +food:rand(1,3)
 Zignorować | +health:5
+
+---
+#ID: found_water
+#FREQ: 0.6
+Podczas zbierania opału znalazłeś małe źródło czystej wody!
+OPTIONS:
+Zabrać | +water:rand(2,4)
+Zignorować | +health:5
+
+---
+#ID: found_medicine
+#FREQ: 0.6
+Przeglądając starą apteczkę, znalazłeś zapomniane leki!
+OPTIONS:
+Zabrać | +medicine:rand(1,2)
+Zostawić | +health:5

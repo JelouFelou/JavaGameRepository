@@ -1,0 +1,83 @@
+#ID: poisoned_water
+#FREQ: 0.3
+Znajdujesz beczkę z czystą wodą. Jednak w pobliżu leży martwe zwierzę.
+OPTIONS:
+Zaryzykujmy i bierzemy tą wodę | +water:10 | sick_all
+Zostawić i poszukać innego źródła | unlock:safe_water
+
+---
+#ID: safe_water
+#FREQ: 0.2
+#UNIQUE
+#HIDDEN
+Po dalszych poszukiwaniach znajdujesz ukryte źródło. Woda jest krystalicznie czysta.
+OPTIONS:
+Napełnić zapasy | +water:15
+Zostawić jako rezerwę | +health:10
+
+---
+#ID: suspicious_medicine
+#FREQ: 0.4
+W opuszczonej aptece znajdujesz nienaruszone opakowanie leków. Data ważności minęła 2 miesiące temu.
+OPTIONS:
+Wziąć leki | +medicine:5 | -health:15
+Sprawdzić skład | +medicine:rand(2,5)
+Zostawić
+
+---
+#ID: aggressive_dog
+#FREQ: 0.1
+Zaatakował cię bezpański pies. Wygląda na chorego i agresywnego.
+OPTIONS:
+Odepchnąć kijem | -health:15
+Uciekać | sick:1
+Zaoferować jedzenie | -food:10 | unlock:loyal_dog | game_effect:loyal_dog
+
+---
+#ID: loyal_dog
+#FREQ: 0.6
+#HIDDEN
+Psinka jest dość podekscytowana wyjściem na zewnątrz, co potrzebujesz żeby próbowała znaleźć?
+OPTIONS:
+Jedzenie | +food:rand(1,4)
+Wodę | +water:rand(1,4)
+Leki | +medicine:rand(1,3)
+
+---
+#ID: false_alliance
+#FREQ: 0.2
+Grupa podróżnych oferuje wymianę: 5 jedzenia za mapę do ukrytego magazynu. Wyglądają na uczciwych.
+OPTIONS:
+Wymienić | -food:5 | unlock:fake_map
+Okraść jakimś cudem | -health:20 | unlock:fake_map
+Odmówić
+
+---
+#ID: fake_map
+#UNIQUE
+#FREQ: 0.5
+#HIDDEN
+"Magazyn" okazał się pułapką. W środku jest grupa rabusiów. Co wydaje ci się być najlepszą opcją?
+OPTIONS:
+Walczyć | -health:30 | +food:5  | +water:5
+Negocjować | -water:4 | +food:8
+Uciekać
+
+---
+#ID: generator_choice
+#FREQ: 0.3
+Znalazłeś działający generator. Możesz go użyć do oświetlenia lub podgrzania nieczystej wody.
+OPTIONS:
+Użyć do światła | +health:15
+Użyć do podgrzania nieczystej wody | +water:4
+Zostawić na później | unlock:generator_parts
+
+---
+#ID: generator_parts
+#UNIQUE
+#HIDDEN
+Po rozebraniu generatora z nudów, znajdujesz wartościowe części. Decydujesz się...
+OPTIONS:
+Wymienić je na jedzenie | +food:rand(1,5)
+Zrobić filtr wody | +water:rand(1,5)
+Zachować na przyszłość | -health:5 | game_effect:generator_parts

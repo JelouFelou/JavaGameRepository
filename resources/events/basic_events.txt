@@ -1,46 +1,30 @@
 #ID: hungry_day
 #FREQ: 0.4
-Dziś wszyscy są wyjątkowo głodni!
+Dziś wszyscy są wyjątkowo głodni! Wszyscy szukają coś po szafkach, ale to ty masz zasoby.
 OPTIONS:
-Nakarm wszystkich | -food:rand(1,2) | +health:10 | feed_all
-Oszczędzaj jedzenie | -health:25
+Nakarm wszystkich | -food:rand(2,3) | +health:5 | feed_all
+Oszczędzaj jedzenie | -health:15
 
 ---
 #ID: thirsty_event
 #FREQ: 0.4
-Fala upałów sprawia, że wszyscy członkowie rodziny cierpią z pragnienia!
+Fala upałów sprawia, że zapasy wody topnieją w oczach. Wszystkim chce się pić jak nigdy!
 OPTIONS:
-Rozdać wodę | -water:rand(2,4) | quench_all
-Oszczędzać wodę | -health:15
+Rozdać wodę | -water:rand(2,3) | +health:5 | quench_all
+Oszczędzać wodę | -health:10
 
 ---
 #ID: sickness_event
 #FREQ: 0.2
 W schronie wybuchła epidemia! Wszyscy członkowie rodziny wykazują objawy choroby.
 OPTIONS:
-Użyć leków | -medicine:rand(2,4) | cure_all
-Czekać aż przejdzie | -health:20 | sick_all
-
----
-#ID: found_water
-#FREQ: 0.7
-Znaleziono źródło czystej wody!
-OPTIONS:
-Napełnić zapasy | +water:rand(1,3)
-Zignorować | -health:10
+Użyć leków | -medicine:rand(1,2) | +health:5 | cure_all
+Czekać aż przejdzie | -health:15 | sick_all
 
 ---
 #ID: sick_event
-#FREQ: 0.5
-Jeden z członków zespołu ma objawy choroby zakaźnej!
+#FREQ: 0.2
+Członek rodziny wykazuje objawy choroby zakaźnej! Kaszel rozlega się po całym schronie.
 OPTIONS:
-Odizolować chorego | sick:1
-Zignorować problem | -health:20
-
----
-#ID: found_medicine
-#FREQ: 0.6
-Znaleziono apteczkę pierwszej pomocy!
-OPTIONS:
-Zabrać | +medicine:2
-Zostawić | +health:10
+Odizolować chorego | sick:1 | +health:5
+Zignorować problem | -health:10 | sick_all
