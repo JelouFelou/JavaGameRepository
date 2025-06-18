@@ -44,6 +44,7 @@ public class Main {
         System.out.println("Twoja rodzina musi przetrwać w trudnych warunkach.");
         System.out.println("Zarządzaj zasobami (jedzenie, woda, leki) i decyduj, jak reagować na wydarzenia.");
         System.out.println("Każdy dzień to nowe wyzwania. Przetrwaj jak najdłużej!");
+        System.out.println("Autor: Adrian Bober");
         waitForEnter(scanner);
     }
     private static void waitForEnter(Scanner scanner) {

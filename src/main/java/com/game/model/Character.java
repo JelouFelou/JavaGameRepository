@@ -6,6 +6,7 @@ public class Character {
     private boolean isHungry = false;
     private boolean isThirsty = false;
     private boolean isSick = false;
+    private boolean isDead = false;
 
     // Constructor
     public Character(String name) {
@@ -18,16 +19,16 @@ public class Character {
     }
     public void applyDailyEffects() {
         if(isHungry) {
-            health -= 20;
-            System.out.println(name + " traci 20 zdrowia z głodu!");
+            health -= 10;
+            System.out.println(name + " traci 10 zdrowia z głodu!");
         }
         if(isThirsty) {
-            health -= 20;
-            System.out.println(name + " traci 20 zdrowia z pragnienia!");
+            health -= 10;
+            System.out.println(name + " traci 10 zdrowia z pragnienia!");
         }
         if(isSick) {
-            health -= 10;
-            System.out.println(name + " traci 10 zdrowia z powodu choroby!");
+            health -= 5;
+            System.out.println(name + " traci 5 zdrowia z powodu choroby!");
         }
     }
     public void copyStateFrom(Character source) {
@@ -38,6 +39,18 @@ public class Character {
     }
     public void setHealth(int health) {
         this.health = Math.max(0, Math.min(100, health));
+        if (this.health <= 0) {
+            this.isDead = true;
+        }
+    }
+    public void setDead(boolean isDead) {
+        this.isDead = isDead;
+        if (isDead) {
+            this.health = 0;
+            this.isHungry = false;
+            this.isThirsty = false;
+            this.isSick = false;
+        }
     }
 
 
@@ -47,6 +60,9 @@ public class Character {
     public boolean isHungry() { return isHungry; }
     public boolean isThirsty() { return isThirsty; }
     public boolean isSick() { return isSick; }
+    public boolean isDead() {
+        return isDead;
+    }
 
     // Setter
     public void setHungry(boolean hungry) { isHungry = hungry; }

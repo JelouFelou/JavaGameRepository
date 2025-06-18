@@ -60,37 +60,42 @@ public class GameController {
     }
     private void handleNeeds(Scanner scanner) {
         boolean needsExist = gameData.getCharacters().stream()
+                .filter(c -> !c.isDead()) // Tylko żywe postacie
                 .anyMatch(c -> c.isHungry() || c.isThirsty() || c.isSick());
 
         if (!needsExist) return;
 
         System.out.println("\n[ZASPOKAJANIE POTRZEB]");
-        for(int i = 0; i < gameData.getCharacters().size(); i++) {
+        for (int i = 0; i < gameData.getCharacters().size(); i++) {
             Character character = gameData.getCharacters().get(i);
 
+            if (character.isDead()) {
+                continue; // Pomijaj martwe postacie
+            }
+
             // Obsługa głodu
-            if(character.isHungry()) {
+            if (character.isHungry()) {
                 System.out.print("Nakarmić " + character.getName() + "? (T/N) ");
                 String choice = scanner.nextLine().trim().toUpperCase();
-                if(choice.equals("T")) {
+                if (choice.equals("T")) {
                     giveFood(i);
                 }
             }
 
             // Obsługa pragnienia
-            if(character.isThirsty()) {
+            if (character.isThirsty()) {
                 System.out.print("Napoić " + character.getName() + "? (T/N) ");
                 String choice = scanner.nextLine().trim().toUpperCase();
-                if(choice.equals("T")) {
+                if (choice.equals("T")) {
                     giveWater(i);
                 }
             }
 
             // Obsługa choroby
-            if(character.isSick()) {
+            if (character.isSick()) {
                 System.out.print("Podaj leki " + character.getName() + "? (T/N) ");
                 String choice = scanner.nextLine().trim().toUpperCase();
-                if(choice.equals("T")) {
+                if (choice.equals("T")) {
                     giveMedicine(i);
                 }
             }
@@ -124,20 +129,28 @@ public class GameController {
         }
     }
     private void applyDailyEffects() {
-        gameData.getCharacters().forEach(Character::applyDailyEffects);
+        for (Character c : gameData.getCharacters()) {
+            if (!c.isDead()) { // Tylko żywe postacie
+                int oldHealth = c.getHealth();
+                c.applyDailyEffects();
+
+                if (c.getHealth() <= 0 && oldHealth > 0) {
+                    c.setDead(true); // Oznacz jako martwą
+                    System.out.println("\n!" + c.getName() + " UMARŁ(A)!");
+                }
+            }
+        }
     }
 
     // === SYMULACJA DNIA ===
     private void simulateDay(Scanner scanner) {
-        clearScreen();
-
         // 1. Ustaw potrzeby na początku dnia
         if (gameData.getCurrentDay() % 2 == 0) {
-            System.out.println("--> Sprawdzam głód...");
+            //System.out.println("--> Sprawdzam głód...");
             gameData.getCharacters().forEach(c -> c.setHungry(true));
         }
         if (gameData.getCurrentDay() % 3 == 0) {
-            System.out.println("--> Sprawdzam pragnienie...");
+            //System.out.println("--> Sprawdzam pragnienie...");
             gameData.getCharacters().forEach(c -> c.setThirsty(true));
         }
 
@@ -360,7 +373,7 @@ public class GameController {
                         }
                         break;
 
-                    // Efekty specjalne (tekstowe)
+                    // Efekty specjalne
                     case "unlock":
                         unlockedEvents.add(value);
                         System.out.println("Odblokowano wydarzenie: " + value);
@@ -456,6 +469,7 @@ public class GameController {
         eventSequences.put("secret_room_etap1", "secret_room_etap2");
         eventSequences.put("secret_room_etap2", "secret_room_etap3");
         eventSequences.put("radio_transmission", "radio_source");
+        eventSequences.put("aggressive_dog", "loyal_dog");
     } // eventChain
 
 
@@ -466,14 +480,18 @@ public class GameController {
         System.out.println("Zapasy wody: " + gameData.getWaterSupplies());
         System.out.println("Zapasy leków: " + gameData.getMedicineSupplies());
 
-        gameData.getCharacters().forEach(c -> {
-            String status = c.getName() +
-                    " | Zdrowie: " + c.getHealth() +
-                    " | " + (c.isHungry() ? "GŁODNY" : "Najedzony") +
-                    " | " + (c.isThirsty() ? "SPRAGNIONY" : "Napojony") +
-                    " | " + (c.isSick() ? "CHORY" : "Zdrowy");
-            System.out.println(status);
-        });
+        for (Character c : gameData.getCharacters()) {
+            if (c.isDead()) {
+                System.out.println(c.getName() + " | **MARTWY**"); // Komunikat o śmierci
+            } else {
+                String status = c.getName() +
+                        " | Zdrowie: " + c.getHealth() +
+                        " | " + (c.isHungry() ? "GŁODNY" : "Najedzony") +
+                        " | " + (c.isThirsty() ? "SPRAGNIONY" : "Napojony") +
+                        " | " + (c.isSick() ? "CHORY" : "Zdrowy");
+                System.out.println(status);
+            }
+        }
 
         System.out.println("\n[NASTROJE POSTACI]");
         for (Character character : gameData.getCharacters()) {
@@ -499,7 +517,7 @@ public class GameController {
 
     // === LOGIKA GRY ===
     private boolean isGameOver() {
-        return gameData.getCharacters().stream().allMatch(c -> c.getHealth() <= 0);
+        return gameData.getCharacters().stream().allMatch(c -> c.isDead());
     }
 
     // === Czyszczenie ekranu ===
